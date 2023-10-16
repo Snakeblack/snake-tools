@@ -1,0 +1,35 @@
+---
+---
+
+<main id="main" class="content -z-20 relative">
+  <div
+    id="bg-gradiant--content"
+    class="h-[21rem] bg-[var(--bg-color-gradient)] bg-gradient-to-t from-[var(--bg-dark--card)] to-[var(--bg-transparent)] -z-10 rounded-[var(--border-radius--card)] absolute transition-colors w-full"
+  ></div>
+</main>
+
+<script>
+  // al hacer hover en el #main, se activa el background en el #bg-gradiant--content
+  // y se desactiva al quitar el hover
+  const main = document.querySelector("#main");
+  const bgGradiantContent = document.querySelector("#bg-gradiant--content");
+
+ 
+    main.addEventListener("onClick", () => {
+      bgGradiantContent.classList.add("bg-[var(--bg-color-gradient)]");
+    });
+
+    main.addEventListener("onClick", () => {
+      bgGradiantContent.classList.remove("bg-[var(--bg-color-gradient)]");
+      console.log("go?")
+    });
+
+</script>
+
+<style>
+  .content {
+    width: 100%;
+    background-color: var(--bg-dark--card);
+    border-radius: var(--border-radius--card);
+  }
+</style>
