@@ -2,9 +2,10 @@
 interface Props {
   href: string;
   nameItem: string;
+  boxIcon: string;
 }
 
-const { href, nameItem } = Astro.props;
+const { href, nameItem, boxIcon } = Astro.props;
 ---
 
 <li class="py-[0.25rem] px-[0.75rem]">
@@ -12,8 +13,24 @@ const { href, nameItem } = Astro.props;
     href={href}
     class="flex flex-row items-center gap-5 h-[2.5rem] transition-colors text-gray-800 hover:text-gray-900 dark:text-gray-300 hover:dark:text-white"
   >
-    <slot name="icon"/>
+    <div class={boxIcon}>
+      <slot name="icon" />
+    </div>
     <span class="font-medium tracking-wide">{nameItem}</span>
   </a>
 </li>
 
+<style>
+  .box-icon {
+    padding: 0.5rem;
+    background-image: linear-gradient(
+      to right bottom,
+      #0519377d,
+      #004d7a73,
+      #0087937a,
+      #00bf737a,
+      #a6eb127e
+    );
+    border-radius: 0.5rem;
+  }
+</style>
