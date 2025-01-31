@@ -5,59 +5,113 @@
 <main id="main" class="content z-20 relative">
   <div
     id="bg-gradiant--content"
-    class="h-[21rem] bg-gradient-to-t from-black to-cyan-700 z-30 rounded-[var(--border-radius--card)] absolute transition-all duration-500 w-full"
+    class="h-[21rem] bg-gradient-to-t from-transparent to-cyan-700 z-30 rounded-[var(--border-radius--card)] absolute transition-all duration-500 w-full"
   >
   </div>
 </main>
 
 <script>
-  const bgGradiantContent = document.querySelector("#bg-gradiant--content") as HTMLElement | null;
-  const originalColor = "#0e7490";
-  let currentColor = originalColor;
-
-  // Genera un color hexadecimal aleatorio
-  const randomHexColor = (): string => {
-    return `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
+  // Convierte color hexadecimal a componentes RGB numéricos [R, G, B]
+  // Ejemplo: #0e7490 → [14, 116, 144]
+  const parseHexColor = (hex: string): number[] => {
+    const hexWithoutHash = hex.slice(1); // Remueve el caracter #
+    return hexWithoutHash.match(/.{2}/g)!.map((ch) => parseInt(ch, 16)); // Divide en pares y convierte de base 16
   };
 
-  // Anima la transición de color de un elemento HTML
-  const animateColorChange = (element: HTMLElement, startColor: string, endColor: string, duration: number): void => {
-    let startTime: number | null = null;
+  // Referencia al elemento del DOM y colores base
+  const bgGradiantContent = document.querySelector(
+    "#bg-gradiant--content"
+  ) as HTMLElement | null;
+  const originalColor = "#0e7490"; // Color inicial en formato HEX
+  const originalColorRGB = parseHexColor(originalColor); // Color base en RGB para mejores rendimiento
+  let currentColorRGB = originalColorRGB; // Trackea el color actual en formato RGB
+  let animationFrameId: number | null = null; // Referencia para controlar la animación activa
 
-    // Función que se ejecuta en cada frame de la animación
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1); // Calcula el progreso de la animación
-      const newColor = interpolateColor(startColor, endColor, progress); // Obtiene el color intermedio
-      element.style.background = `linear-gradient(to top, black, ${newColor})`; // Aplica el color intermedio como fondo
+  // Genera colores HEX aleatorios usando operaciones bitwise para mejor rendimiento
+  const randomHexColor = (): string => {
+    // (Math.random() * 0x1000000) | 0 → Optimización para Math.floor más rápido
+    return `#${((Math.random() * 0x1000000) | 0).toString(16).padStart(6, "0")}`;
+  };
 
-      if (progress < 1) {
-        requestAnimationFrame(step); // Continúa la animación
-      } else {
-        currentColor = endColor; // Actualiza el color actual al color final
+  /**
+   * Animación optimizada de cambio de color usando interpolación lineal
+   * @param element - Elemento HTML a animar
+   * @param startRGB - Color inicial en formato RGB [R, G, B]
+   * @param endRGB - Color objetivo en formato RGB [R, G, B]
+   * @param duration - Duración en milisegundos
+   */
+  const animateColorChange = (
+    element: HTMLElement,
+    startRGB: number[],
+    endRGB: number[],
+    duration: number
+  ): void => {
+    const startTime = performance.now(); // Timestamp de inicio preciso
+    const deltas = endRGB.map((end, i) => end - startRGB[i]); // Pre-cálculo de diferencias entre componentes
+
+    // Cancela animaciones previas para evitar superposiciones
+    const cancelPreviousAnimation = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
       }
     };
 
-    requestAnimationFrame(step); // Inicia la animación
+    /**
+     * Actualiza el color del elemento basado en el progreso de la animación
+     * @param progress - Valor normalizado [0-1] del progreso de la animación
+     */
+    const updateColor = (progress: number) => {
+      // Interpolación lineal por componente: start + (delta * progreso)
+      const [r, g, b] = startRGB.map((start, i) =>
+        Math.round(start + deltas[i] * progress)
+      );
+
+      // Construye el color HEX interpolado asegurando 2 dígitos por componente
+      element.style.background = `linear-gradient(to top, transparent, #${r
+        .toString(16)
+        .padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b
+        .toString(16)
+        .padStart(2, "0")})`;
+    };
+
+    /**
+     * Loop de animación usando requestAnimationFrame para sincronización con refresco de pantalla
+     * @param timestamp - Marca de tiempo proporcionada por requestAnimationFrame
+     */
+    const animate = (timestamp: number) => {
+      const elapsed = timestamp - startTime; // Tiempo transcurrido
+      const progress = Math.min(elapsed / duration, 1); // Progreso normalizado
+
+      updateColor(progress); // Renderiza el frame actual
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate); // Siguiente frame
+      } else {
+        currentColorRGB = endRGB; // Actualiza color final al completar
+        animationFrameId = null; // Limpia referencia
+      }
+    };
+
+    cancelPreviousAnimation(); // Asegura solo una animación activa
+    animationFrameId = requestAnimationFrame(animate); // Inicia animación
   };
 
-  // Calcula un color intermedio entre dos colores
-  const interpolateColor = (color1: string, color2: string, factor: number): string => {
-    const result = color1.slice(1).match(/.{2}/g)!.map((hex: string, i: number) => {
-      return Math.round(parseInt(hex, 16) + factor * (parseInt(color2.slice(1).match(/.{2}/g)![i], 16) - parseInt(hex, 16)));
-    });
-    return `#${result.map((value: number) => value.toString(16).padStart(2, '0')).join('')}`;
-  };
-
-  // Evento que se dispara cuando el ratón pasa sobre el elemento
+  // Eventos: Usan early return para evitar ejecuciones innecesarias
   bgGradiantContent?.addEventListener("mouseover", () => {
-    const newColor = randomHexColor(); // Genera un nuevo color aleatorio
-    animateColorChange(bgGradiantContent!, currentColor, newColor, 500); // Anima la transición al nuevo color
+    if (!bgGradiantContent) return; // Valida existencia del elemento
+    const newColorRGB = parseHexColor(randomHexColor());
+    animateColorChange(bgGradiantContent, currentColorRGB, newColorRGB, 500);
   });
 
-  // Evento que se dispara cuando el ratón sale del elemento
   bgGradiantContent?.addEventListener("mouseout", () => {
-    animateColorChange(bgGradiantContent!, currentColor, originalColor, 500); // Anima la transición al color original
+    if (!bgGradiantContent) return;
+    animateColorChange(
+      bgGradiantContent,
+      currentColorRGB,
+      originalColorRGB,
+      500
+    );
   });
 </script>
 
