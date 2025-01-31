@@ -4,6 +4,8 @@ interface Props {
 }
 
 const { title } = Astro.props;
+import { ViewTransitions } from 'astro:transitions';
+
 ---
 
 <!doctype html>
@@ -15,22 +17,24 @@ const { title } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <ViewTransitions />
   </head>
-  <body>
-    <div id="wrapper">
+  <body class="bg-black">
+    <div id="wrapper" class="grid [grid-template-columns:_auto_1fr] [grid-template-rows:_1fr] gap-2 h-page">
       <slot />
     </div>
   </body>
 </html>
 <script>
   const theme = (() => {
-    const theme = localStorage.getItem("theme");
-    if (theme && typeof localStorage !== undefined) return theme;
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return dark ? "dark" : "light";
+    if (typeof localStorage !== 'undefined') {
+      const storedTheme = localStorage.getItem("theme");
+      if (storedTheme) return storedTheme;
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   })();
 
-  document.documentElement.classList.add(theme!);
+  document.documentElement.classList.add(theme);
 </script>
 <style is:global>
   :root {
@@ -78,14 +82,5 @@ const { title } = Astro.props;
     background-color: black;
     color-scheme: dark light;
     color: white;
-  }
-
-  #wrapper {
-    padding: var(--panel-gap);
-    height: 100dvh;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-rows: 1fr;
-    gap: var(--panel-gap);
   }
 </style>
